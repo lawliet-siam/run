@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#d81b60">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="bKash">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>bKash</title>
+<style>
+  :root{
+    --pink:#f32a77;
+    --pink-dark:#9c0a55;
+    --ink:#1b1220;
+    --paper:#fdfaf9;
+    --muted:#8a7d85;
+    --line:#eee0e6;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;margin:0;touch-action:manipulation;}
+  body{font-family:'Segoe UI',Roboto,system-ui,sans-serif;background:#111;display:flex;align-items:center;justify-content:center;
+    padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);}
+  .phone{width:390px;max-width:100vw;height:100vh;max-height:844px;background:var(--paper);position:relative;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6);}
+  @media(min-width:430px){ .phone{ border-radius:36px; } }
+  .screen{position:absolute;inset:0;display:none;flex-direction:column;opacity:0;transition:opacity .3s ease;}
+  .screen.active{display:flex;opacity:1;}
+  .statusbar{display:flex;justify-content:space-between;align-items:center;padding:12px 20px 4px;font-size:12px;font-weight:600;flex-shrink:0;}
+
+  /* real image elements replacing the old placeholder slots */
+  img.mark,img.home-bg{object-fit:cover;}
+  img.logo-slot,img.qr-slot,img.fp-btn{object-fit:contain;}
+  img{display:block;}
+
+  /* fallback placeholder helper (kept in case an image fails to load / for any remaining slots) */
+  .img-slot{
+    background:repeating-linear-gradient(45deg,rgba(0,0,0,.06) 0 8px,transparent 8px 16px);
+    border:1px dashed rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;
+    text-align:center;color:#6b6070;font-size:9.5px;line-height:1.3;padding:4px;
+  }
+  #splash .img-slot{background:repeating-linear-gradient(45deg,rgba(255,255,255,.10) 0 8px,transparent 8px 16px);border-color:rgba(255,255,255,.4);color:#ffd9ec;}
+
+  /* SPLASH */
+  #splash{background:var(--pink);justify-content:space-between;cursor:pointer;color:#fff;}
+  #splash .mark{flex:1;margin:40px;border-radius:20px;width:calc(100% - 80px);height:auto;}
+  #splash .dots{display:flex;gap:8px;justify-content:center;margin-bottom:16px;}
+  #splash .dots span{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.55);}
+  #splash .hint{text-align:center;color:rgba(255,255,255,.7);font-size:11px;padding-bottom:10px;}
+  #splash .homebar{width:120px;height:4px;background:rgba(0,0,0,.35);border-radius:3px;margin:0 auto 10px;}
+
+  /* LOGIN */
+  #login{background:var(--paper);padding:0 24px;}
+  .toprow{display:flex;justify-content:space-between;align-items:flex-start;padding:16px 0 0;}
+  .back{font-size:20px;color:var(--pink);cursor:pointer;}
+  .bn-pill{border:1px solid var(--pink);color:var(--pink);font-size:11px;padding:4px 14px;border-radius:20px;}
+  .logo-row{display:flex;justify-content:space-between;align-items:center;margin-top:14px;}
+  .logo-slot{width:120px;height:34px;border-radius:8px;}
+  .qr-slot{width:44px;height:44px;border-radius:6px;}
+  .login-title{font-size:23px;font-weight:700;color:var(--ink);margin:22px 0 2px;}
+  .login-sub{font-size:15px;color:#5c525a;margin-bottom:22px;}
+  .login-sub .blur-slot{display:inline-block;width:48px;height:14px;vertical-align:middle;border-radius:4px;}
+  .field{border-bottom:1px solid var(--line);padding:8px 0 10px;}
+  .field label{font-size:11px;color:var(--muted);display:block;margin-bottom:3px;}
+  .field .val{font-size:16px;color:var(--ink);font-weight:600;}
+  .pin-row{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--line);padding:12px 0 12px;margin-bottom:18px;}
+  .pin-row label{font-size:11px;color:var(--muted);display:block;margin-bottom:8px;}
+  .pin-dots{display:flex;gap:10px;}
+  .pin-dots span{width:9px;height:9px;border-radius:50%;border:1.5px solid #c9bcc4;}
+  .pin-dots span.on{background:var(--ink);border-color:var(--ink);}
+  .forgot{font-size:13px;color:var(--pink);font-weight:600;cursor:pointer;}
+  .fp-btn{width:60px;height:60px;border-radius:14px;border:2px dashed var(--pink);display:flex;align-items:center;justify-content:center;margin:4px 0 14px auto;color:var(--pink);font-size:24px;cursor:pointer;}
+  .keypad{margin-top:auto;}
+  .proceed{background:#3d3540;color:#fff;display:flex;justify-content:space-between;align-items:center;padding:15px 24px;font-size:16px;font-weight:600;margin:0 -24px;cursor:pointer;}
+  .keys{display:grid;grid-template-columns:repeat(3,1fr);margin:0 -24px;}
+  .keys div{text-align:center;padding:15px 0;font-size:21px;color:#4a424a;font-weight:500;border-top:1px solid var(--line);border-right:1px solid var(--line);}
+  .keys div:nth-child(3n){border-right:none;}
+  .keys div.icon{color:var(--pink);font-size:17px;}
+
+  /* FINGERPRINT SHEET */
+  .fp-sheet{margin-top:auto;background:#2b2530;color:#fff;border-radius:20px 20px 0 0;padding:30px 24px 40px;text-align:center;margin-left:-24px;margin-right:-24px;position:relative;}
+  .fp-sheet .close{position:absolute;top:14px;left:16px;font-size:15px;color:#bdb3ba;cursor:pointer;}
+  .fp-sheet h3{font-size:16px;margin:4px 0 4px;font-weight:600;}
+  .fp-sheet p{font-size:12px;color:#a99fa6;margin:0 0 24px;}
+  .fp-ring{width:72px;height:72px;border-radius:50%;border:2px solid #5b7cff;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:28px;color:#7d9bff;cursor:pointer;animation:pulse 1.6s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(91,124,255,.4);}50%{box-shadow:0 0 0 14px rgba(91,124,255,0);}}
+
+  /* HOME */
+  #home{background:var(--paper);overflow:hidden;}
+  .home-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;}
+  .hero-top{display:flex;align-items:center;gap:12px;padding:calc(env(safe-area-inset-top,0px) + 10px) 20px 4px;position:relative;z-index:2;}
+  .avatar-slot{width:56px;height:56px;border-radius:50%;flex-shrink:0;object-fit:cover;box-shadow:0 2px 8px rgba(0,0,0,.25);}
+  .info-col{flex:1;display:flex;flex-direction:column;gap:8px;min-width:0;}
+  .who{color:#fff;font-weight:600;font-size:14.5px;}
+  .icon-btn{width:32px;height:32px;border-radius:50%;background:#fff2;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;flex-shrink:0;}
+
+  .balance-bar{position:relative;background:#fff;border-radius:7px;height:32px;display:flex;align-items:center;cursor:pointer;box-shadow:0 8px 18px rgba(122,10,61,.25);width:128px;overflow:visible;}
+  .coin{position:absolute;left:3px;top:3px;width:26px;height:26px;border-radius:5px;background:var(--pink);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:left .55s cubic-bezier(.65,0,.35,1);z-index:3;}
+  .bal-txt{padding-left:35px;padding-right:12px;font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;transition:opacity .2s ease;}
+
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px 4px;padding:20px 16px 6px;}
+  .grid .item{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;}
+  .grid .item .ic{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .grid .item span{font-size:10px;color:#4a424a;text-align:center;line-height:1.2;}
+  .c1{background:#ffe3ea;color:#e6007e;} .c2{background:#e2f5e6;color:#2e9e4a;}
+  .c3{background:#e0f4f7;color:#1aa3b8;} .c4{background:#fdeddc;color:#e08a2b;}
+  .c5{background:#efe4fb;color:#8b4fd9;} .c6{background:#e5f3d8;color:#6bbf2a;}
+  .c7{background:#fbe4ea;color:#e6007e;} .c8{background:#f1e8db;color:#a9863f;}
+  .see-more{text-align:center;font-size:12px;color:var(--pink);font-weight:600;padding:6px 0 14px;}
+
+  .promo{margin:4px 16px 6px;border-radius:14px;overflow:hidden;height:96px;position:relative;}
+  .promo-slot{position:absolute;inset:0;}
+  .promo-dots{display:flex;gap:5px;justify-content:center;padding:8px 0 14px;}
+  .promo-dots span{width:5px;height:5px;border-radius:50%;background:#d8c9d0;}
+  .promo-dots span.on{width:14px;border-radius:3px;background:var(--pink);}
+
+  .qf-title{padding:0 16px;font-size:12.5px;font-weight:700;color:var(--ink);}
+  .qf-row{display:flex;gap:8px;padding:10px 16px 18px;overflow-x:auto;}
+  .qf-row .chip{background:#f4eef1;border-radius:20px;padding:7px 12px;font-size:11px;color:#4a424a;white-space:nowrap;display:flex;align-items:center;gap:5px;flex-shrink:0;}
+
+  .navbar{display:flex;flex-shrink:0;border-top:1px solid var(--line);background:#fff;padding:9px 0 12px;padding-bottom:calc(9px + env(safe-area-inset-bottom,0px));}
+  .navbar .n{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9.5px;color:#9a8f96;}
+  .navbar .n.active{color:var(--pink);}
+  .navbar .n .ic{font-size:17px;}
+
+  .restart{position:absolute;top:calc(env(safe-area-inset-top,0px) + 8px);right:8px;z-index:50;background:rgba(0,0,0,.35);color:#fff;border:none;border-radius:14px;font-size:10px;padding:5px 9px;cursor:pointer;}
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- SPLASH -->
+  <div class="screen active" id="splash">
+    <div class="statusbar"><span></span><span></span></div>
+    <img class="mark" src="images/kash3.png" alt="Kash logo mark">
+    <div class="dots"><span></span><span></span><span></span></div>
+    <div class="hint">tap anywhere to continue</div>
+    <div class="homebar"></div>
+  </div>
+
+  <!-- LOGIN -->
+  <div class="screen" id="login">
+    <div class="toprow">
+      <div class="back" onclick="goTo('splash')">←</div>
+      <div class="bn-pill">বাংলা</div>
+    </div>
+    <div class="logo-row">
+      <img class="logo-slot" src="images/BKash_Logo_icon-700x662.png" alt="Kash">
+    </div>
+    <div class="login-title">Log In</div>
+    <div class="login-sub">to your bKash account</div>
+    <div class="field"><label>Account Number</label><div class="val">+88 01XXXXXXXXX</div></div>
+    <div class="pin-row">
+      <div>
+        <label>bKash PIN</label>
+        <div class="pin-dots" id="pinDots"><span></span><span></span><span></span><span></span></div>
+      </div>
+      <div class="forgot">Forgot PIN?</div>
+    </div>
+    <img class="fp-btn" src="images/fingerprint.jpg" alt="Use fingerprint" onclick="goTo('fpmodal')">
+    <div class="keypad">
+      <div class="proceed" onclick="goTo('home')"><span>Proceed</span><span>→</span></div>
+      <div class="keys">
+        <div onclick="pinTap()">1</div><div onclick="pinTap()">2</div><div onclick="pinTap()">3</div>
+        <div onclick="pinTap()">4</div><div onclick="pinTap()">5</div><div onclick="pinTap()">6</div>
+        <div onclick="pinTap()">7</div><div onclick="pinTap()">8</div><div onclick="pinTap()">9</div>
+        <div class="icon" onclick="clearPin()">⌫</div><div onclick="pinTap()">0</div><div class="icon" onclick="goTo('home')">⏎</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FINGERPRINT MODAL (over login) -->
+  <div class="screen" id="fpmodal">
+    <div class="toprow"><div class="back" onclick="goTo('login')">←</div><div class="bn-pill">বাংলা</div></div>
+    <div class="logo-row"><img class="logo-slot" src="images/BKash_Logo_icon-700x662.png" alt="Kash"></div>
+    <div class="login-title">Log In</div>
+    <div class="login-sub">to your bKash account</div>
+    <div class="field"><label>Account Number</label><div class="val">+88 01XXXXXXXXX</div></div>
+    <div class="fp-sheet">
+      <div class="close" onclick="goTo('login')">✕</div>
+      <h3>Tap the fingerprint sensor to<br>verify your fingerprint.</h3>
+      <p>Authentication required</p>
+      <div class="fp-ring" onclick="goTo('home')">🫆</div>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div class="screen" id="home">
+
+    <a href="https://youtube.com/shorts/QKw5HGjgEBY?si=6XtOkyqh2cI4L8vP" target="_blank"><img class="home-bg" src="images/home4.jpeg" alt=""></a>
+
+    <div class="hero-top">
+      <div class="icon-btn" style="position:absolute;top:6px;right:56px;"></div>
+      <div class="icon-btn"
+     style="position:absolute;top:6px;right:16px;"
+     onclick="window.open('https://bka.sh/webdl', '_blank')">☰</a></div>
+      <img class="avatar-slot" src="images/siam.jpeg" alt="Profile">
+      <div class="info-col">
+        <div class="who">Md. Abrar S Siam</div>
+        <div class="balance-bar" id="balanceBar" onclick="toggleBalance()">
+          <div class="coin" id="coin">৳</div>
+          <div class="bal-txt" id="balTxt">Tap for Balance</div>
+        </div>
+      </div>
+    </div>
+
+    
+
+<script>
+function goTo(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='home') resetBalance();
+  if(id==='login') clearPin();
+}
+  setTimeout(() => {
+  goTo('login');
+}, 1500);
+
+let pinCount=0;
+function pinTap(){
+  pinCount=Math.min(pinCount+1,4);
+  updatePinDots();
+  if(pinCount===4) setTimeout(()=>goTo('home'),250);
+}
+function clearPin(){ pinCount=0; updatePinDots(); }
+function updatePinDots(){
+  document.querySelectorAll('#pinDots span').forEach((d,i)=>d.classList.toggle('on', i<pinCount));
+}
+
+// balance: coin badge slides from left to right, text swaps underneath
+let revealed=false;
+function resetBalance(){
+  revealed=false;
+  document.getElementById('coin').style.left='3px';
+  const t=document.getElementById('balTxt');
+  t.style.opacity=0;
+  setTimeout(()=>{ t.textContent='Tap for Balance'; t.style.paddingLeft='35px'; t.style.paddingRight='12px'; t.style.opacity=1; },150);
+  document.getElementById('balanceBar').style.justifyContent='flex-start';
+}
+function toggleBalance(){
+  const bar=document.getElementById('balanceBar');
+  const coin=document.getElementById('coin');
+  const t=document.getElementById('balTxt');
+  revealed=!revealed;
+  if(revealed){
+    const w=bar.getBoundingClientRect().width;
+    coin.style.left=(w-29)+'px';
+    t.style.opacity=0;
+    setTimeout(()=>{
+      t.textContent='৳0.03';
+      t.style.paddingLeft='12px';
+      t.style.paddingRight='34px';
+      t.style.opacity=1;
+    },200);
+  } else {
+    resetBalance();
+  }
+}
+</script>
+    <script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js");
+  });
+}
+</script>
+</body>
+</html>
